@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS & API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #28a745; }
+        .error { background-color: #f8d7da; border-color: #dc3545; }
+        .info { background-color: #d1ecf1; border-color: #17a2b8; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .output { background-color: #f5f5f5; padding: 10px; margin-top: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; }
+        h1 { color: #333; }
+        h2 { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Full-Stack Todo App - API Testing Tool</h1>
+    <p>Use this tool to verify your deployment is working correctly.</p>
+
+    <!-- Configuration -->
+    <div class="test info">
+        <h2>⚙️ Configuration</h2>
+        <label>Backend URL (e.g., https://todoapp-backend.onrender.com):</label>
+        <input type="text" id="backendUrl" placeholder="https://todoapp-backend.onrender.com" style="width: 90%; padding: 8px; margin: 10px 0;">
+        <br>
+        <small>Leave empty for local testing: http://localhost:8080</small>
+    </div>
+
+    <!-- Test 1: CORS Headers -->
+    <div class="test">
+        <h2>✓ Test 1: CORS Headers</h2>
+        <p>Check if CORS headers are correctly configured</p>
+        <button onclick="testCORS()">Test CORS Headers</button>
+        <div id="corsResult"></div>
+    </div>
+
+    <!-- Test 2: Get All Todos -->
+    <div class="test">
+        <h2>✓ Test 2: Get All Todos</h2>
+        <p>Fetch list of todos from backend</p>
+        <button onclick="getTodos()">Get All Todos</button>
+        <div id="getTodosResult"></div>
+    </div>
+
+    <!-- Test 3: Create Todo -->
+    <div class="test">
+        <h2>✓ Test 3: Create New Todo</h2>
+        <p>Create a new todo item</p>
+        <input type="text" id="todoTitle" placeholder="Enter todo title" style="width: 90%; padding: 8px; margin: 10px 0;">
+        <input type="text" id="todoDesc" placeholder="Enter todo description" style="width: 90%; padding: 8px; margin: 10px 0;">
+        <button onclick="createTodo()">Create Todo</button>
+        <div id="createTodoResult"></div>
+    </div>
+
+    <!-- Test 4: Database Connection -->
+    <div class="test">
+        <h2>✓ Test 4: Backend Health Check</h2>
+        <p>Verify backend is running and database is connected</p>
+        <button onclick="healthCheck()">Health Check</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <!-- Test 5: Network Diagnosis -->
+    <div class="test">
+        <h2>📊 Test 5: Network Diagnosis</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="diagnosisResult"></div>
+    </div>
+
+    <script>
+        function getBackendUrl() {
+            const customUrl = document.getElementById('backendUrl').value;
+            return customUrl || 'http://localhost:8080';
+        }
+
+        function showResult(elementId, message, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.className = isSuccess ? 'output success' : 'output error';
+            element.innerHTML = message;
+        }
+
+        async function testCORS() {
+            const backendUrl = getBackendUrl();
+            const resultDiv = document.getElementById('corsResult');
+            resultDiv.innerHTML = 'Testing CORS...';
+
+            try {
+                const response = await fetch(`${backendUrl}/todo/path`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                    }
+                });
+
+                const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+                const methodsHeader = response.headers.get('Access-Control-Allow-Methods');
+
+                let message = '✓ CORS Headers:\n';
+                message += `Origin: ${corsHeader || 'NOT SET (might be OK)'}\n`;
+                message += `Methods: ${methodsHeader || 'NOT SET (might be OK)'}\n`;
+                message += `Status: ${response.status}\n\n`;
+                message += 'Full Headers:\n';
+
+                for (const [key, value] of response.headers.entries()) {
+                    if (key.toLowerCase().includes('access-control')) {
+                        message += `${key}: ${value}\n`;
+                    }
+                }
+
+                showResult('corsResult', message, true);
+            } catch (error) {
+                showResult('corsResult', `❌ CORS Error:\n${error.message}\n\nMake sure:\n1. Backend URL is correct\n2. Backend is running\n3. CORS is enabled in backend`, false);
+            }
+        }
+
+        async function getTodos() {
+            const backendUrl = getBackendUrl();
+            const resultDiv = document.getElementById('getTodosResult');
+            resultDiv.innerHTML = 'Fetching todos...';
+
+            try {
+                const response = await fetch(`${backendUrl}/todo/path`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const todos = await response.json();
+                const message = `✓ Successfully fetched ${todos.length} todos\n\n${JSON.stringify(todos, null, 2)}`;
+                showResult('getTodosResult', message, true);
+            } catch (error) {
+                showResult('getTodosResult', `❌ Error fetching todos:\n${error.message}`, false);
+            }
+        }
+
+        async function createTodo() {
+            const backendUrl = getBackendUrl();
+            const title = document.getElementById('todoTitle').value;
+            const description = document.getElementById('todoDesc').value;
+            const resultDiv = document.getElementById('createTodoResult');
+
+            if (!title) {
+                showResult('createTodoResult', '❌ Please enter a title', false);
+                return;
+            }
+
+            resultDiv.innerHTML = 'Creating todo...';
+
+            try {
+                const response = await fetch(`${backendUrl}/todo/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description || '',
+                        completed: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const todo = await response.json();
+                const message = `✓ Todo created successfully!\n\n${JSON.stringify(todo, null, 2)}`;
+                showResult('createTodoResult', message, true);
+                document.getElementById('todoTitle').value = '';
+                document.getElementById('todoDesc').value = '';
+            } catch (error) {
+                showResult('createTodoResult', `❌ Error creating todo:\n${error.message}`, false);
+            }
+        }
+
+        async function healthCheck() {
+            const backendUrl = getBackendUrl();
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = 'Checking health...';
+
+            try {
+                const response = await fetch(`${backendUrl}/todo/path`);
+                const message = `✓ Backend is responding\nStatus: ${response.status}\nHealth: OK`;
+                showResult('healthResult', message, true);
+            } catch (error) {
+                showResult('healthResult', `❌ Backend health check failed:\n${error.message}`, false);
+            }
+        }
+
+        async function runAllTests() {
+            const resultDiv = document.getElementById('diagnosisResult');
+            resultDiv.innerHTML = 'Running all tests...\n';
+
+            let results = '';
+
+            // Test 1: CORS
+            results += '\n📋 Test 1: CORS Headers\n';
+            results += '─'.repeat(40) + '\n';
+            try {
+                const response = await fetch(`${getBackendUrl()}/todo/path`, {
+                    method: 'OPTIONS'
+                });
+                results += `✓ Status: ${response.status}\n`;
+                const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+                results += `✓ CORS: ${corsHeader || 'OK'}\n`;
+            } catch (e) {
+                results += `✗ Failed: ${e.message}\n`;
+            }
+
+            // Test 2: GET request
+            results += '\n📋 Test 2: GET Todos\n';
+            results += '─'.repeat(40) + '\n';
+            try {
+                const response = await fetch(`${getBackendUrl()}/todo/path`);
+                const todos = await response.json();
+                results += `✓ Success: Got ${todos.length} todos\n`;
+            } catch (e) {
+                results += `✗ Failed: ${e.message}\n`;
+            }
+
+            // Test 3: POST request
+            results += '\n📋 Test 3: CREATE Todo\n';
+            results += '─'.repeat(40) + '\n';
+            try {
+                const response = await fetch(`${getBackendUrl()}/todo/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: 'Test Todo ' + new Date().getTime(),
+                        description: 'Test',
+                        completed: false
+                    })
+                });
+                if (response.ok) {
+                    results += `✓ Success: Created todo\n`;
+                } else {
+                    results += `✗ Failed: HTTP ${response.status}\n`;
+                }
+            } catch (e) {
+                results += `✗ Failed: ${e.message}\n`;
+            }
+
+            // Test 4: Connection
+            results += '\n📋 Test 4: Connection\n';
+            results += '─'.repeat(40) + '\n';
+            results += `Backend: ${getBackendUrl()}\n`;
+            results += `Frontend: ${window.location.href}\n`;
+            results += `Browser: ${navigator.userAgent.split(' ').pop()}\n`;
+
+            resultDiv.className = 'output info';
+            resultDiv.innerHTML = results + '\n✅ Diagnostic complete!';
+        }
+
+        // Load backend URL from localStorage
+        window.onload = function() {
+            const saved = localStorage.getItem('backendUrl');
+            if (saved) {
+                document.getElementById('backendUrl').value = saved;
+            }
+        };
+
+        // Save backend URL to localStorage
+        document.getElementById('backendUrl').addEventListener('change', function() {
+            localStorage.setItem('backendUrl', this.value);
+        });
+    </script>
+</body>
+</html>

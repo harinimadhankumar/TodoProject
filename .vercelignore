@@ -1,0 +1,9 @@
+Backend/
+.github/
+*.md
+node_modules/
+.git/
+.env
+.env.local
+.DS_Store
+target/

@@ -1,0 +1,46 @@
+# Secrets and local configuration - NEVER commit these
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+config/local/
+application-local.properties
+application-dev.properties
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+target/
+build/
+dist/
+*.jar
+*.war
+
+# Dependencies
+node_modules/
+package-lock.json
+.maven/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+
+# Logs
+*.log
+logs/
+
+# Maven
+.m2/
